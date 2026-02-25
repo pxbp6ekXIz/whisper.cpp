@@ -1,14 +1,42 @@
-A sample Android app using [whisper.cpp](https://github.com/ggerganov/whisper.cpp/) to do voice-to-text transcriptions.
+A minimal Android app using [whisper.cpp](https://github.com/ggerganov/whisper.cpp/) for fully offline speech-to-text.
 
-To use:
+## What this app does
 
-1. Select a model from the [whisper.cpp repository](https://github.com/ggerganov/whisper.cpp/tree/master/models).[^1]
-2. Copy the model to the "app/src/main/assets/models" folder.
-3. Select a sample audio file (for example, [jfk.wav](https://github.com/ggerganov/whisper.cpp/raw/master/samples/jfk.wav)).
-4. Copy the sample to the "app/src/main/assets/samples" folder.
-5. Select the "release" active build variant, and use Android Studio to run and deploy to your device.
-[^1]: I recommend the tiny or base models for running on an Android device.
+- Single **Start/Stop recording** button.
+- Transcribes recorded speech after you stop recording.
+- Shows transcript in a read-only text box.
+- **Copy text** button to copy the transcript.
+- No in-app downloads required at runtime.
+
+## Bundle a model inside the APK
+
+Place one Whisper `.bin` model file in:
+
+- `app/src/main/assets/models/`
+
+At startup, the app loads the first `.bin` file found in that folder.
+
+Recommended for mobile speed/size tradeoff:
+
+- `ggml-tiny.en.bin` or `ggml-base.en.bin`
+
+## Build a universal APK
+
+This project already builds native libraries for:
+
+- `arm64-v8a`
+- `armeabi-v7a`
+- `x86`
+- `x86_64`
+
+Build with Android Studio or:
+
+```bash
+./gradlew :app:assembleRelease
+```
+
+Then use the generated APK from `app/build/outputs/apk/release/`.
+
+> Note: APK size depends heavily on the model file you embed.
 
 (PS: Do not move this android project folder individually to other folders, because this android project folder depends on the files of the whole project.)
-
-<img width="300" alt="image" src="https://user-images.githubusercontent.com/1670775/221613663-a17bf770-27ef-45ab-9a46-a5f99ba65d2a.jpg">
