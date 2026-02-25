@@ -1,13 +1,23 @@
 package com.whispercppdemo.ui.main
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -19,9 +29,8 @@ fun MainScreen(viewModel: MainScreenViewModel) {
     MainScreen(
         canTranscribe = viewModel.canTranscribe,
         isRecording = viewModel.isRecording,
-        messageLog = viewModel.dataLog,
-        onBenchmarkTapped = viewModel::benchmark,
-        onTranscribeSampleTapped = viewModel::transcribeSample,
+        statusMessage = viewModel.statusMessage,
+        transcript = viewModel.transcript,
         onRecordTapped = viewModel::toggleRecord
     )
 }
@@ -31,11 +40,12 @@ fun MainScreen(viewModel: MainScreenViewModel) {
 private fun MainScreen(
     canTranscribe: Boolean,
     isRecording: Boolean,
-    messageLog: String,
-    onBenchmarkTapped: () -> Unit,
-    onTranscribeSampleTapped: () -> Unit,
-    onRecordTapped: () -> Unit
+    statusMessage: String,
+    transcript: String,
+    onRecordTapped: () -> Unit,
 ) {
+    val clipboardManager = LocalClipboardManager.current
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -47,41 +57,40 @@ private fun MainScreen(
             modifier = Modifier
                 .padding(innerPadding)
                 .padding(16.dp)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(verticalArrangement = Arrangement.SpaceBetween) {
-                Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                    BenchmarkButton(enabled = canTranscribe, onClick = onBenchmarkTapped)
-                    TranscribeSampleButton(enabled = canTranscribe, onClick = onTranscribeSampleTapped)
+            RecordButton(
+                enabled = canTranscribe || isRecording,
+                isRecording = isRecording,
+                onClick = onRecordTapped,
+            )
+
+            Text(text = statusMessage)
+
+            OutlinedTextField(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                value = transcript,
+                onValueChange = {},
+                label = { Text("Transcript") },
+                readOnly = true,
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Button(
+                    modifier = Modifier.height(48.dp),
+                    onClick = { clipboardManager.setText(AnnotatedString(transcript)) },
+                    enabled = transcript.isNotBlank()
+                ) {
+                    Text("Copy text")
                 }
-                RecordButton(
-                    enabled = canTranscribe,
-                    isRecording = isRecording,
-                    onClick = onRecordTapped
-                )
             }
-            MessageLog(messageLog)
         }
-    }
-}
-
-@Composable
-private fun MessageLog(log: String) {
-    SelectionContainer {
-        Text(modifier = Modifier.verticalScroll(rememberScrollState()), text = log)
-    }
-}
-
-@Composable
-private fun BenchmarkButton(enabled: Boolean, onClick: () -> Unit) {
-    Button(onClick = onClick, enabled = enabled) {
-        Text("Benchmark")
-    }
-}
-
-@Composable
-private fun TranscribeSampleButton(enabled: Boolean, onClick: () -> Unit) {
-    Button(onClick = onClick, enabled = enabled) {
-        Text("Transcribe sample")
     }
 }
 
@@ -96,13 +105,17 @@ private fun RecordButton(enabled: Boolean, isRecording: Boolean, onClick: () -> 
             }
         }
     )
-    Button(onClick = {
-        if (micPermissionState.status.isGranted) {
-            onClick()
-        } else {
-            micPermissionState.launchPermissionRequest()
-        }
-     }, enabled = enabled) {
+    Button(
+        onClick = {
+            if (micPermissionState.status.isGranted) {
+                onClick()
+            } else {
+                micPermissionState.launchPermissionRequest()
+            }
+        },
+        enabled = enabled,
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Text(
             if (isRecording) {
                 "Stop recording"
